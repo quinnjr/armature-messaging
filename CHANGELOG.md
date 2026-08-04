@@ -15,3 +15,17 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 - **Breaking:** `subscribe_with_options` errors for `AckMode::Manual` on backends that cannot honour it and for any `filter`, rather than silently downgrading. `Manual` was a synonym for `Auto` on three of four backends, with no ack handle on `Message` to make it meaningful, and `filter` was read by no backend at all.
 - **Breaking:** `MessageHandler::on_deserialize_error` is removed; every backend conversion is infallible, so the framework had no site from which to call it.
 - The per-message `JoinSet` is reaped as it goes; completed entries accumulated for a subscription's whole lifetime.
+
+## [0.4.1] - 2026-08-04
+
+### Fixed
+
+- Requirements on sibling armature crates name a minor instead of `0`. Under
+  Cargo's 0.x rules `version = "0"` matches any release ever made, and edition
+  2024 selects the MSRV-aware resolver, so a consumer declaring an older
+  `rust-version` was handed the oldest version satisfying it — resolving
+  `armature-core = "0"` on Rust 1.89 produced `armature-core 0.2.3` while an
+  explicit `armature-core = "0.8"` elsewhere in the same graph pulled 0.8.2.
+  Two copies of core, and a build failing on symbols the older one lacks. Each
+  0.x minor in this family is a breaking change, so the requirement now names
+  one. No API change.
