@@ -13,7 +13,14 @@ jobs:
     name: fmt + clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      # `--all-features` turns on optional integrations whose build scripts
+      # shell out to system libraries. Without these the build fails before it
+      # reaches any Rust of ours.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libsasl2-dev libssl-dev pkg-config
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
