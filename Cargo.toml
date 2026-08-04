@@ -1,12 +1,12 @@
 [package]
 name = "armature-messaging"
 version = "0.4.0"
-edition.workspace = true
-rust-version.workspace = true
-authors.workspace = true
-license.workspace = true
+edition = "2024"
+rust-version = "1.94.1"
+authors = ["Joseph Quinn <quinn.josephr@proton.me>"]
+license = "Apache-2.0"
 repository = "https://github.com/quinnjr/armature-messaging"
-homepage.workspace = true
+homepage = "https://quinnjr.github.io/armature"
 description = "Message broker integrations for the Armature framework - RabbitMQ, Kafka, NATS, and AWS SQS/SNS"
 keywords = ["messaging", "rabbitmq", "kafka", "nats", "sqs"]
 categories = ["web-programming", "asynchronous"]
