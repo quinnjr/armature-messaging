@@ -1,0 +1,30 @@
+name: Lint
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    name: fmt + clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # `--all-features` turns on optional integrations whose build scripts
+      # shell out to system libraries. Without these the build fails before it
+      # reaches any Rust of ours.
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libsasl2-dev libssl-dev libzstd-dev liblz4-dev zlib1g-dev libcurl4-openssl-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      # Matches the framework gate: the whole target graph, warnings denied.
+      - run: cargo clippy --all-targets --all-features -- -D warnings
