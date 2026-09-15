@@ -17,7 +17,7 @@ full = ["rabbitmq", "kafka", "nats", "aws"]
 rabbitmq = ["lapin"]
 kafka = ["rdkafka"]
 nats = ["async-nats", "dep:nkeys"]
-aws = ["aws-config", "aws-sdk-sqs", "aws-sdk-sns"]
+aws = ["aws-smithy-types", "aws-config", "aws-sdk-sqs", "aws-sdk-sns"]
 # mq-bridge integration - provides unified messaging through mq-bridge crate
 mq-bridge = ["dep:mq-bridge", "dep:anyhow"]
 mq-bridge-kafka = ["mq-bridge", "mq-bridge/kafka"]
@@ -49,10 +49,17 @@ rdkafka = { version = "0.39", features = ["cmake-build"], optional = true }
 async-nats = { version = "0.50", optional = true }
 nkeys = { version = "0.4", optional = true }
 
+# SDK default features are off to drop the legacy hyper-0.14 client and its
+# h2 0.3 (RUSTSEC-2026-0258); the hyper-1 `default-https-client` is kept.
 # AWS SQS/SNS
 aws-config = { version = "1.12", optional = true }
-aws-sdk-sqs = { version = "1.109", optional = true }
-aws-sdk-sns = { version = "1.111", optional = true }
+aws-sdk-sqs = { version = "1.109", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
+aws-sdk-sns = { version = "1.111", default-features = false, features = ["default-https-client", "rt-tokio"], optional = true }
+
+# Held below 1.7 so a fresh resolve (Cargo.lock is not committed) picks the
+# aws-sdk-*/aws-runtime releases that still build with aws-config 1.12's
+# aws-smithy-json 0.63. Drop this once aws-config moves to aws-smithy-json 0.64.
+aws-smithy-types = { version = ">=1.6.3, <1.7", optional = true }
 
 # mq-bridge integration
 mq-bridge = { version = "0.4", optional = true }
