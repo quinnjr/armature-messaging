@@ -51,8 +51,8 @@ nkeys = { version = "0.4", optional = true }
 
 # AWS SQS/SNS
 aws-config = { version = "1.12", optional = true }
-aws-sdk-sqs = { version = "1.110", optional = true }
-aws-sdk-sns = { version = "1.112", optional = true }
+aws-sdk-sqs = { version = "1.109", optional = true }
+aws-sdk-sns = { version = "1.111", optional = true }
 
 # mq-bridge integration
 mq-bridge = { version = "0.4", optional = true }
