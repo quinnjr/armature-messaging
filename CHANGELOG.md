@@ -9,6 +9,10 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+### Changed
+
+- Bumped dependencies: `tokio` 1.52→1.53, `uuid` 1.23→1.26, `lapin` 4.10→4.11, `async-nats` 0.49→0.50, `aws-config` 1.8→1.12, `aws-sdk-sqs` 1.93→1.109, `aws-sdk-sns` 1.94→1.111, `mq-bridge` 0.3→0.4. `aws-sdk-sqs`/`aws-sdk-sns` are held one release back from `cargo upgrade`'s picks (1.110/1.112) to stay on `aws-smithy-types` 1.6.x, matching the workspace-wide smithy resolution. No source changes were needed: none of the bumped crates' 0.x/1.x version jumps touched an API surface this crate uses, and `mq-bridge` 0.4 still exposes every feature (`kafka`, `amqp`, `nats`, `mqtt`, `http`, `full`) that this crate's `mq-bridge-*` features forward to.
+
 ### Fixed
 
 - **Breaking:** `ProcessingResult::DeadLetter` on SQS no longer calls `DeleteMessage`. Deleting is precisely how a message does *not* reach a DLQ — SQS redrives after `maxReceiveCount` — so requesting dead-lettering discarded the message, indistinguishably from success. It now accelerates redelivery and requires a redrive policy on the queue.
