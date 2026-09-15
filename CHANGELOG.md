@@ -12,6 +12,9 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 ### Changed
 
 - Bumped dependencies: `tokio` 1.52→1.53, `uuid` 1.23→1.26, `lapin` 4.10→4.11, `async-nats` 0.49→0.50, `aws-config` 1.8→1.12, `aws-sdk-sqs` 1.93→1.109, `aws-sdk-sns` 1.94→1.111, `mq-bridge` 0.3→0.4. `aws-sdk-sqs`/`aws-sdk-sns` are held one release back from `cargo upgrade`'s picks (1.110/1.112) to stay on `aws-smithy-types` 1.6.x, matching the workspace-wide smithy resolution. No source changes were needed: none of the bumped crates' 0.x/1.x version jumps touched an API surface this crate uses, and `mq-bridge` 0.4 still exposes every feature (`kafka`, `amqp`, `nats`, `mqtt`, `http`, `full`) that this crate's `mq-bridge-*` features forward to.
+- A direct `aws-smithy-types >=1.6.3, <1.7` requirement keeps a fresh resolve on the SDK releases held back above; without it the resolver picks `aws-sdk-*`/`aws-runtime` releases that need `aws-smithy-types` 1.7 and fail to build against `aws-config` 1.12.
+- AWS SDK dependencies no longer enable their default features, dropping the SDK's legacy hyper-0.14 client and its `h2 0.3` (RUSTSEC-2026-0258); the hyper-1 `default-https-client` and `rt-tokio` (plus `sigv4a`/`http-1x` where the SDK enabled them by default) are kept.
+- The MSRV CI job also checks `--all-features`, so the optional AWS SDK dependencies are built on the MSRV toolchain.
 
 ### Fixed
 
