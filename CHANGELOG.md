@@ -9,6 +9,13 @@ Earlier changes are recorded in the workspace [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-17
+
+### Security
+
+- The NATS and Kafka "connecting" log lines no longer print credentials embedded in the connection URL; userinfo is rendered as `***@`. New public helper `config::redact_url_for_logging`.
+- **Breaking:** `MessagingConfig`, `KafkaConfig` and `AwsConfig` now have redacting `Debug` impls (`password`, `sasl_password`, `secret_access_key`, `session_token` print as `<redacted>`; URL userinfo is masked) and those secret fields are `#[serde(skip_serializing)]`. They still deserialize normally. Migration: code that serialized a config and expected the secret back must re-supply it from its secret source.
+
 ## [0.5.0] - 2026-09-15
 
 ### Changed

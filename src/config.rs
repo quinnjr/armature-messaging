@@ -6,13 +6,19 @@ use std::time::Duration;
 use serde::{Deserialize, Serialize};
 
 /// Configuration for messaging backends
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `password` is a secret: it is redacted from the [`Debug`] output and
+/// skipped when serializing. Any `user:pass@` userinfo embedded in `url` is
+/// redacted from `Debug` as well (see [`redact_url_for_logging`]).
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MessagingConfig {
     /// Connection URL or comma-separated list of URLs
     pub url: String,
     /// Optional username for authentication
     pub username: Option<String>,
-    /// Optional password for authentication
+    /// Optional password for authentication (secret: redacted from `Debug`,
+    /// not serialized)
+    #[serde(skip_serializing)]
     pub password: Option<String>,
     /// Connection timeout
     #[serde(default = "default_connection_timeout")]
@@ -28,6 +34,65 @@ pub struct MessagingConfig {
     /// Backend-specific options
     #[serde(default)]
     pub options: HashMap<String, String>,
+}
+
+/// Render an `Option` secret as `Some("<redacted>")`/`None` for `Debug`.
+fn redact(opt: &Option<String>) -> Option<&'static str> {
+    opt.as_ref().map(|_| "<redacted>")
+}
+
+/// Strip userinfo (`user:pass@`) from every URL in a (possibly
+/// comma-separated) connection string so it can be logged safely.
+///
+/// Never log `MessagingConfig::url` without passing it through this first:
+/// broker URLs commonly embed the password. The *last* `@` inside each
+/// authority is used, so an unencoded `@` in the password does not leave part
+/// of the credentials behind.
+///
+/// ```
+/// use armature_messaging::config::redact_url_for_logging;
+///
+/// assert_eq!(
+///     redact_url_for_logging("nats://user:pw@a:4222,nats://b:4222"),
+///     "nats://***@a:4222,nats://b:4222"
+/// );
+/// ```
+pub fn redact_url_for_logging(url: &str) -> String {
+    url.split(',')
+        .map(redact_single_url)
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn redact_single_url(url: &str) -> String {
+    let after_scheme = url.find("://").map(|i| i + 3).unwrap_or(0);
+    let authority_end = url[after_scheme..]
+        .find(['/', '?', '#'])
+        .map(|i| after_scheme + i)
+        .unwrap_or(url.len());
+    match url[after_scheme..authority_end].rfind('@') {
+        Some(at) => format!(
+            "{}***@{}",
+            &url[..after_scheme],
+            &url[after_scheme + at + 1..]
+        ),
+        None => url.to_string(),
+    }
+}
+
+impl std::fmt::Debug for MessagingConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("MessagingConfig")
+            .field("url", &redact_url_for_logging(&self.url))
+            .field("username", &self.username)
+            .field("password", &redact(&self.password))
+            .field("connection_timeout", &self.connection_timeout)
+            .field("heartbeat", &self.heartbeat)
+            .field("tls", &self.tls)
+            .field("tls_config", &self.tls_config)
+            .field("options", &self.options)
+            .finish()
+    }
 }
 
 fn default_connection_timeout() -> Duration {
@@ -243,7 +308,9 @@ impl RabbitMqConfig {
 }
 
 /// Kafka-specific configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `sasl_password` is a secret: redacted from [`Debug`], not serialized.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct KafkaConfig {
     /// Base messaging config (URL is comma-separated broker list)
     #[serde(flatten)]
@@ -268,8 +335,26 @@ pub struct KafkaConfig {
     pub sasl_mechanism: Option<String>,
     /// SASL username
     pub sasl_username: Option<String>,
-    /// SASL password
+    /// SASL password (secret: redacted from `Debug`, not serialized)
+    #[serde(skip_serializing)]
     pub sasl_password: Option<String>,
+}
+
+impl std::fmt::Debug for KafkaConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("KafkaConfig")
+            .field("base", &self.base)
+            .field("group_id", &self.group_id)
+            .field("client_id", &self.client_id)
+            .field("auto_offset_reset", &self.auto_offset_reset)
+            .field("enable_auto_commit", &self.enable_auto_commit)
+            .field("auto_commit_interval_ms", &self.auto_commit_interval_ms)
+            .field("session_timeout_ms", &self.session_timeout_ms)
+            .field("sasl_mechanism", &self.sasl_mechanism)
+            .field("sasl_username", &self.sasl_username)
+            .field("sasl_password", &redact(&self.sasl_password))
+            .finish()
+    }
 }
 
 fn default_offset_reset() -> String {
@@ -408,7 +493,6 @@ impl std::fmt::Debug for NatsConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Redact the secret fields: show only whether each is set, never its
         // value, so a `{:?}` of this config cannot leak credentials.
-        let redact = |opt: &Option<String>| opt.as_ref().map(|_| "<redacted>");
         f.debug_struct("NatsConfig")
             .field("base", &self.base)
             .field("name", &self.name)
@@ -483,15 +567,21 @@ impl NatsConfig {
 }
 
 /// AWS SQS/SNS configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// `secret_access_key` and `session_token` are secrets: redacted from
+/// [`Debug`], not serialized.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AwsConfig {
     /// AWS region
     pub region: String,
     /// AWS access key ID (optional, uses environment/IAM role if not set)
     pub access_key_id: Option<String>,
-    /// AWS secret access key
+    /// AWS secret access key (secret: redacted from `Debug`, not serialized)
+    #[serde(skip_serializing)]
     pub secret_access_key: Option<String>,
-    /// Session token (for temporary credentials)
+    /// Session token for temporary credentials (secret: redacted from
+    /// `Debug`, not serialized)
+    #[serde(skip_serializing)]
     pub session_token: Option<String>,
     /// Custom endpoint URL (for LocalStack, etc.)
     pub endpoint_url: Option<String>,
@@ -508,6 +598,23 @@ pub struct AwsConfig {
     /// Visibility timeout in seconds
     #[serde(default = "default_visibility_timeout")]
     pub visibility_timeout: i32,
+}
+
+impl std::fmt::Debug for AwsConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AwsConfig")
+            .field("region", &self.region)
+            .field("access_key_id", &self.access_key_id)
+            .field("secret_access_key", &redact(&self.secret_access_key))
+            .field("session_token", &redact(&self.session_token))
+            .field("endpoint_url", &self.endpoint_url)
+            .field("sqs_queue_url_prefix", &self.sqs_queue_url_prefix)
+            .field("sns_topic_arn_prefix", &self.sns_topic_arn_prefix)
+            .field("long_poll_wait_seconds", &self.long_poll_wait_seconds)
+            .field("max_number_of_messages", &self.max_number_of_messages)
+            .field("visibility_timeout", &self.visibility_timeout)
+            .finish()
+    }
 }
 
 fn default_long_poll_wait() -> i32 {
@@ -582,6 +689,49 @@ impl AwsConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn messaging_config_debug_and_serialize_redact_password_and_url_userinfo() {
+        let config = MessagingConfig::new("amqp://guest:urlpass@broker:5672/vh")
+            .with_credentials("svc", "field-password");
+        let debug = format!("{config:?}");
+        assert!(!debug.contains("urlpass"), "URL password leaked: {debug}");
+        assert!(
+            !debug.contains("field-password"),
+            "password leaked: {debug}"
+        );
+        assert!(debug.contains("amqp://***@broker:5672/vh"));
+        let json = serde_json::to_string(&config).unwrap();
+        assert!(
+            !json.contains("field-password"),
+            "serialized password leaked"
+        );
+    }
+
+    #[test]
+    fn kafka_and_aws_config_debug_and_serialize_redact_secrets() {
+        let kafka = KafkaConfig::new("b1:9092").with_sasl("PLAIN", "u", "kafka-pw");
+        assert!(!format!("{kafka:?}").contains("kafka-pw"));
+        assert!(!serde_json::to_string(&kafka).unwrap().contains("kafka-pw"));
+
+        let aws = AwsConfig::new("us-east-1")
+            .with_credentials("AKIA", "aws-secret")
+            .with_session_token("aws-session");
+        let debug = format!("{aws:?}");
+        assert!(!debug.contains("aws-secret") && !debug.contains("aws-session"));
+        let json = serde_json::to_string(&aws).unwrap();
+        assert!(!json.contains("aws-secret") && !json.contains("aws-session"));
+    }
+
+    #[test]
+    fn redact_url_handles_lists_and_no_userinfo() {
+        assert_eq!(redact_url_for_logging("nats://h:4222"), "nats://h:4222");
+        assert_eq!(redact_url_for_logging("u:p@@h:1"), "***@h:1");
+        assert_eq!(
+            redact_url_for_logging("nats://a:4222/?q=x@y"),
+            "nats://a:4222/?q=x@y"
+        );
+    }
 
     #[test]
     fn nats_config_debug_redacts_secrets() {

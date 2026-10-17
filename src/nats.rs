@@ -54,7 +54,10 @@ impl NatsBroker {
 
     /// Connect with NATS-specific configuration
     pub async fn connect_with_config(config: NatsConfig) -> Result<Self, MessagingError> {
-        info!(url = %config.base.url, "Connecting to NATS");
+        info!(
+            url = %crate::config::redact_url_for_logging(&config.base.url),
+            "Connecting to NATS"
+        );
 
         let mut options = async_nats::ConnectOptions::new();
 
