@@ -56,7 +56,10 @@ impl KafkaBroker {
 
     /// Connect with Kafka-specific configuration
     pub async fn connect_with_config(config: KafkaConfig) -> Result<Self, MessagingError> {
-        info!(brokers = %config.base.url, "Connecting to Kafka");
+        info!(
+            brokers = %crate::config::redact_url_for_logging(&config.base.url),
+            "Connecting to Kafka"
+        );
 
         let mut client_config = ClientConfig::new();
         client_config.set("bootstrap.servers", &config.base.url);
