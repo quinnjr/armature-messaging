@@ -62,7 +62,7 @@ aws-sdk-sns = { version = "1.111", default-features = false, features = ["defaul
 aws-smithy-types = { version = ">=1.6.3, <1.7", optional = true }
 
 # mq-bridge integration
-mq-bridge = { version = "0.4", optional = true }
+mq-bridge = { version = "1.1", optional = true }
 anyhow = { version = "1.0", optional = true }
 
 [dev-dependencies]
