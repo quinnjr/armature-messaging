@@ -59,7 +59,7 @@ aws-sdk-sns = { version = "1.111", default-features = false, features = ["defaul
 # Held below 1.7 so a fresh resolve (Cargo.lock is not committed) picks the
 # aws-sdk-*/aws-runtime releases that still build with aws-config 1.12's
 # aws-smithy-json 0.63. Drop this once aws-config moves to aws-smithy-json 0.64.
-aws-smithy-types = { version = ">=1.6.3, <1.7", optional = true }
+aws-smithy-types = { version = ">=1.6.3, <1.10", optional = true }
 
 # mq-bridge integration
 mq-bridge = { version = "0.4", optional = true }
