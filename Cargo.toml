@@ -46,7 +46,7 @@ lapin = { version = "4.11", optional = true }
 rdkafka = { version = "0.39", features = ["cmake-build"], optional = true }
 
 # NATS
-async-nats = { version = "0.50", optional = true }
+async-nats = { version = "0.51", optional = true }
 nkeys = { version = "0.4", optional = true }
 
 # SDK default features are off to drop the legacy hyper-0.14 client and its
